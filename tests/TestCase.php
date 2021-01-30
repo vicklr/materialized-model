@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Vicklr\MaterializedModel\MaterializedModelServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -19,7 +20,9 @@ abstract class TestCase extends Orchestra
 
     protected function getPackageProviders($app)
     {
-        return [];
+        return [
+            MaterializedModelServiceProvider::class,
+        ];
     }
 
     protected function getEnvironmentSetUp($app)
@@ -37,13 +40,10 @@ abstract class TestCase extends Orchestra
     protected function setUpDatabase(Application $app)
     {
         $app['db']->connection()->getSchemaBuilder()->create('folders', function (Blueprint $table) {
-            $table->id('id');
-            $table->string('path', 191)->default('/');
-            $table->integer('depth')->default(0);
-            $table->string('name', 191);
-            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->id();
+            $table->materializedFields();
+            $table->materializedOrdering('name', false);
             $table->timestamps();
-            $table->foreign('parent_id')->references('id')->on('folders')->onDelete('CASCADE');
         });
     }
 }

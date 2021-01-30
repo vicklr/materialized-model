@@ -29,6 +29,13 @@
             "Vicklr\\MaterializedModel\\Test\\": "tests/"
         }
     },
+    "extra" : {
+        "laravel" : {
+            "providers" : [
+                "Vicklr\\MaterializedModel\\MaterializedModelServiceProvider"
+            ]
+        }
+    },
     "scripts" : {
         "test" : "vendor/bin/phpunit"
     },
