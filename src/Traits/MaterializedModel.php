@@ -38,7 +38,8 @@ trait MaterializedModel
      */
     protected $orderColumn = 'name';
 
-    protected static function bootMaterializedModel() {
+    protected static function bootMaterializedModel()
+    {
         static::saving(function (Model $node) {
             $node->setPath();
             $node->setDepth();
@@ -148,7 +149,7 @@ trait MaterializedModel
         $instance = new static;
 
         return $instance->newQuery()->whereNull($instance->getParentColumnName())
-                        ->orderBy($instance->getQualifiedOrderColumnName());
+            ->orderBy($instance->getQualifiedOrderColumnName());
     }
 
     public function rebuild($save_self = true)
@@ -211,13 +212,13 @@ trait MaterializedModel
     public function ancestorsAndSelf()
     {
         return $this->newMaterializedPathQuery()
-                    ->whereIn(
-                        $this->getKeyName(),
-                        collect(explode('/', $this->getPath()))
-                            ->push($this->getKey())
-                            ->filter()
-                            ->unique()
-                    );
+            ->whereIn(
+                $this->getKeyName(),
+                collect(explode('/', $this->getPath()))
+                    ->push($this->getKey())
+                    ->filter()
+                    ->unique()
+            );
     }
 
     public function getAncestorsAndSelf($columns = ['*'])
@@ -258,12 +259,12 @@ trait MaterializedModel
     public function descendants($include_self = false)
     {
         return $this->newMaterializedPathQuery()
-                    ->where(function ($query) use ($include_self) {
-                        $query->where($this->getPathColumnName(), 'like', $this->getPath() . $this->getKey() . '/%');
-                        $query->when($include_self, function ($query) {
-                            $query->orWhere($this->getKeyName(), $this->getKey());
-                        });
-                    });
+            ->where(function ($query) use ($include_self) {
+                $query->where($this->getPathColumnName(), 'like', $this->getPath() . $this->getKey() . '/%');
+                $query->when($include_self, function ($query) {
+                    $query->orWhere($this->getKeyName(), $this->getKey());
+                });
+            });
     }
 
     public function descendantsAndSelf()
@@ -331,7 +332,7 @@ trait MaterializedModel
     public function getLeftSibling()
     {
         return $this->siblings()->where($this->getOrderColumnName(), '<', $this->getOrder())
-                    ->orderBy($this->getOrderColumnName(), 'desc')->first();
+            ->orderBy($this->getOrderColumnName(), 'desc')->first();
     }
 
     public function getRightSibling()
@@ -359,7 +360,7 @@ trait MaterializedModel
         $level = $this->getLevel();
 
         $this->newMaterializedPathQuery()->where($this->getKeyName(), '=', $this->getKey())
-             ->update([$this->getDepthColumnName() => $level]);
+            ->update([$this->getDepthColumnName() => $level]);
         $this->setAttribute($this->getDepthColumnName(), $level);
 
         return $this;
@@ -370,7 +371,7 @@ trait MaterializedModel
         $path = ($this->parent ? $this->parent->getPath() : '') . $this->getParentId() . '/';
 
         $this->newMaterializedPathQuery()->where($this->getKeyName(), '=', $this->getKey())
-             ->update([$this->getPathColumnName() => $path]);
+            ->update([$this->getPathColumnName() => $path]);
         $this->setAttribute($this->getPathColumnName(), $path);
 
         return $this;
@@ -387,7 +388,7 @@ trait MaterializedModel
                 break;
 
             case 'child':
-                if (! $target instanceof Model) {
+                if (!$target instanceof Model) {
                     $target = self::findOrFail($target);
                 }
                 if ($target->isSelfOrDescendantOf($this)) {

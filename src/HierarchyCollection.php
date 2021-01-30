@@ -16,39 +16,41 @@ class HierarchyCollection extends Collection
         return $this;
     }
 
-  public function toHierarchy() {
-    $dict = $this->getDictionary();
+    public function toHierarchy()
+    {
+        $dict = $this->getDictionary();
 
-    uasort($dict, function($a, $b){
-        return $a->getOrder() >= $b->getOrder() ? 1 : -1;
-    });
+        uasort($dict, function ($a, $b) {
+            return $a->getOrder() >= $b->getOrder() ? 1 : -1;
+        });
 
-    return new Collection($this->hierarchical($dict));
-  }
-
-  protected function hierarchical($result) {
-    foreach($result as $key => $node) {
-        $node->setRelation('children', new Collection);
+        return new Collection($this->hierarchical($dict));
     }
 
-    $nestedKeys = [];
+    protected function hierarchical($result)
+    {
+        foreach ($result as $key => $node) {
+            $node->setRelation('children', new Collection);
+        }
 
-    foreach($result as $key => $node) {
-      $parentKey = $node->getParentId();
+        $nestedKeys = [];
 
-      if ( !is_null($parentKey) && array_key_exists($parentKey, $result) ) {
-        $result[$parentKey]->children[] = $node;
+        foreach ($result as $key => $node) {
+            $parentKey = $node->getParentId();
 
-        $nestedKeys[] = $node->getKey();
-      }
+            if (!is_null($parentKey) && array_key_exists($parentKey, $result)) {
+                $result[$parentKey]->children[] = $node;
+
+                $nestedKeys[] = $node->getKey();
+            }
+        }
+
+        foreach ($nestedKeys as $key) {
+            unset($result[$key]);
+        }
+
+        return $result;
     }
-
-    foreach($nestedKeys as $key) {
-        unset($result[$key]);
-    }
-
-    return $result;
-  }
 
     public function descendants($include_selves = false)
     {
@@ -87,7 +89,7 @@ class HierarchyCollection extends Collection
                 $prototype->getKeyName(),
                 collect($this->each->map(function (Model $model) {
                     return explode('/', $model->getPath());
-                    })->flatten()
+                })->flatten()
                 )
                     ->push($this->pluck($prototype->getKey()))
                     ->filter()

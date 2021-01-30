@@ -4,8 +4,6 @@ namespace Vicklr\MaterializedModel\Test;
 
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Vicklr\MaterializedModel\MaterializedModelServiceProvider;
 
