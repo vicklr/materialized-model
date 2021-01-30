@@ -217,7 +217,7 @@ $node->getLevel(); // 0 when root
 <a name="moving-nodes"></a>
 ### Moving nodes around
 
-MaterializedModel provides several methods for moving nodes around:
+Materialized Model provides several methods for moving nodes around:
 
 * `makeSiblingOf($otherNode)`: Make the node the next sibling of ...
 * `makeChildOf($otherNode)`: Make the node a child of ...
@@ -241,7 +241,7 @@ $monsters->makeSiblingOf($dragons);
 <a name="node-questions"></a>
 ### Asking questions to your nodes
 
-You can ask some questions to your Baum nodes:
+You can ask some questions to your Materialized Model nodes:
 
 * `isRoot()`: Returns true if this is a root node.
 * `isChild()`: Returns true if this is a child node.
@@ -261,7 +261,7 @@ $demons->isDescendantOf($root); // => true
 <a name="node-relations"></a>
 ### Relations
 
-Baum provides two self-referential Eloquent relations for your nodes: `parent`
+Materialized Model provides two self-referential Eloquent relations for your nodes: `parent`
 and `children`.
 
 ```php
@@ -417,7 +417,7 @@ Materialized Model does not handle soft deletes specifically, although it _shoul
 
 #### Node extraction query scopes
 
-Baum provides some query scopes which may be used to extract (remove) selected nodes
+Materialized Model provides some query scopes which may be used to extract (remove) selected nodes
 from the current results set.
 
 * `withoutNode(node)`: Excludes the specified node from the current results set.
