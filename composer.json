@@ -1,0 +1,37 @@
+{
+    "name": "vicklr/materialized-model",
+    "description": "Materialized Path for Eloquent model hierarchies",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vicklr",
+            "email": "vicklr@vicklr.com",
+            "homepage": "https://vicklr.com"
+        }
+    ],
+    "require" : {
+        "php" : "^7.4|^8.0",
+        "laravel/framework" : "~5.8.0|^6.0|^7.0|^8.0"
+    },
+    "require-dev" : {
+        "phpunit/phpunit" : "^8.5|^9.5",
+        "mockery/mockery": "^1.4",
+        "orchestra/testbench" : "~3.8.0|^4.0|^5.0|^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vicklr\\MaterializedModel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Vicklr\\MaterializedModel\\Test\\": "tests/"
+        }
+    },
+    "scripts" : {
+        "test" : "vendor/bin/phpunit"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
