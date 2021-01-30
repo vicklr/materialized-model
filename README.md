@@ -4,7 +4,7 @@
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 [![Total Downloads](https://img.shields.io/packagist/dt/vicklr/materialized-model.svg?style=flat-square)](https://packagist.org/packages/vicklr/materialized-model)
 
-This Laravel package [adds hierarchical functionality to your models](https://spatie.be/docs/laravel-backup/v7/taking-backups/overview).
+This Laravel package adds hierarchical functionality to your models.
 
 # Materialized Model
 
@@ -150,17 +150,12 @@ to use MaterializedModel with your model. Below are some examples.
 * [Moving nodes around](#moving-nodes)
 * [Asking questions to your nodes](#node-questions)
 * [Relations](#node-relations)
-* [Root and Leaf scopes](#node-basic-scopes)
+* [Root scopes](#node-basic-scopes)
 * [Accessing the ancestry/descendancy chain](#node-chains)
 * [Limiting levels of children returned](#limiting-depth)
 * [Custom sorting column](#custom-sorting-column)
-* [Dumping the hierarchy tree](#hierarchy-tree)
-* [Model events: `moving` and `moved`](#node-model-events)
-* [Scope support](#scope-support)
-* [Validation](#validation)
-* [Tree rebuilding](#rebuilding)
+* [Model event: `MaterializedModelMovedEvent`](#node-model-events)
 * [Soft deletes](#soft-deletes)
-* [Seeding/Mass assignment](#seeding)
 * [Misc/Utility functions](#misc-utilities)
 
 <a name="creating-root-node"></a>
