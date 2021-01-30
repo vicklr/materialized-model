@@ -37,7 +37,7 @@ and big trees that must be queried efficiently (e.g. threaded posts).
 <a name="installation"></a>
 ## Installation
 
-Materialized Model works with Laravel 5.8 onwards. You can add it to your `composer.json` file
+Materialized Model works with Laravel 7 onwards. You can add it to your `composer.json` file
 with:
 
     "vicklr/materialized-model": "~1.0"
