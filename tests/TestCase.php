@@ -39,8 +39,16 @@ abstract class TestCase extends Orchestra
     {
         $app['db']->connection()->getSchemaBuilder()->create('folders', function (Blueprint $table) {
             $table->id();
+            $table->string('name', 191);
             $table->materializedFields();
-            $table->materializedOrdering('name', false);
+            $table->timestamps();
+        });
+
+        $app['db']->connection()->getSchemaBuilder()->create('menus', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 191);
+            $table->materializedFields();
+            $table->materializedOrdering();
             $table->timestamps();
         });
     }

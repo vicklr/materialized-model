@@ -112,19 +112,20 @@ following columns:
 For that, we have two helper macros on the Blueprint: materializedFields() and materializedOrdering()
 
 The materializedFields() helper will set up the necessary fields for the hierarchy, while
-materializedOrdering adds the ordering field and whether it is numerical or a string
+materializedOrdering adds the numerical ordering field. If you do not want numerical ordering, define
+the field yourself and remember to set it as orderColumn on the model
 
 Here is a sample migration file:
 
 ```php
-class Category extends Migration {
+class CreateCategoriesTable extends Migration {
 
   public function up() {
     Schema::create('categories', function(Blueprint $table) {
       $table->id();
 
       $table->materializedFields($parent_name = 'parent_id', $path_name = 'path', $depth_name = 'depth', $primary_name = 'id');
-      $table->materializedOrdering($order_name = 'name', $numerical = false);
+      $table->materializedOrdering($order_name = 'weight');
     });
   }
 
@@ -219,7 +220,9 @@ $node->getLevel(); // 0 when root
 
 Materialized Model provides several methods for moving nodes around:
 
-* `makeSiblingOf($otherNode)`: Make the node the next sibling of ...
+* `makeNextSiblingOf($otherNode)`: Make the node the next sibling of ...
+* `makePreviousSiblingOf($otherNode)`: Make the node the previous sibling of ...
+* `makeSiblingOf($otherNode)`: Alias of makeNextSiblingOf() ...
 * `makeChildOf($otherNode)`: Make the node a child of ...
 * `makeRoot()`: Make current node a root node.
 
@@ -313,6 +316,8 @@ object where appropiate):
 * `getAncestors()`: Get all of the ancestor chain from the database excluding the current node.
 * `getSiblingsAndSelf()`: Get all children of the parent, including self.
 * `getSiblings()`: Return all children of the parent, except self.
+* `getNextSibling()`: Return the sibling (if any) that has the same parent and is next in the ordering
+* `getPreviousSibling()`: Return the sibling (if any) that has the same parent and is just before the current node in the ordering
 * `getDescendantsAndSelf()`: Retrieve all nested children and self.
 * `getDescendants()`: Retrieve all of its children & nested children.
 

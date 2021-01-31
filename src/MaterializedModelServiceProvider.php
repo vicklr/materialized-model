@@ -19,12 +19,8 @@ class MaterializedModelServiceProvider extends ServiceProvider
                 $this->index($path_name);
             }
         );
-        Blueprint::macro('materializedOrdering', function ($order_name = 'ordering', $numerical = true) {
-            if ($numerical) {
-                $this->unsignedInteger($order_name)->nullable();
-            } else {
-                $this->string($order_name, 191)->nullable();
-            }
+        Blueprint::macro('materializedOrdering', function ($order_name = 'ordering') {
+            $this->unsignedInteger($order_name)->default(0);
         });
     }
 }

@@ -11,7 +11,7 @@ use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
 use Vicklr\MaterializedModel\Exceptions\MoveNotPossibleException;
 use Vicklr\MaterializedModel\HierarchyCollection;
 
-trait MaterializedModel
+trait HasMaterializedPaths
 {
     /**
      * Column name to store the reference to parent's node.
@@ -31,10 +31,21 @@ trait MaterializedModel
     /**
      * Column name for ordering field.
      */
-    protected string $orderColumn = 'name';
+    protected string $orderColumn = 'ordering';
 
-    protected static function bootMaterializedModel()
+    /**
+     * Whether to enforce and automatically manage ordering
+     */
+    protected bool $autoOrdering = false;
+
+    protected static function bootHasMaterializedPaths()
     {
+        static::creating(function (Model $node) {
+            if ($node->autoOrdering) {
+                $node->setAttribute($node->getOrderColumnName(), $node->getMaxOrder() + 1);
+            }
+        });
+
         static::saving(function (Model $node) {
             $node->setPath();
             $node->setDepth();
@@ -42,7 +53,7 @@ trait MaterializedModel
 
         static::saved(function (Model $node) {
             if ($node->wasChanged('parent_id')) {
-                $node->rebuild(false);
+                $node->rebuild();
             }
         });
     }
@@ -153,13 +164,13 @@ trait MaterializedModel
             ->orderBy($instance->getQualifiedOrderColumnName());
     }
 
-    public function rebuild($save_self = true)
+    public function rebuild($save_self = false)
     {
         if ($save_self) {
             $this->save();
         }
         if ($this->children()->count()) {
-            $this->children()->get()->each->rebuild();
+            $this->children()->get()->each->rebuild(true);
         }
     }
 
@@ -330,20 +341,30 @@ trait MaterializedModel
         return $other->is($this) || $this->isAncestorOf($other);
     }
 
-    public function getLeftSibling()
+    public function getPreviousSibling()
     {
         return $this->siblings()->where($this->getOrderColumnName(), '<', $this->getOrder())
             ->orderBy($this->getOrderColumnName(), 'desc')->first();
     }
 
-    public function getRightSibling()
+    public function getNextSibling()
     {
         return $this->siblings()->where($this->getOrderColumnName(), '>', $this->getOrder())->first();
     }
 
     public function makeSiblingOf($node)
     {
-        return $this->makeChildOf($node->parent);
+        return $this->makeNextSiblingOf($node);
+    }
+
+    public function makePreviousSiblingOf($node)
+    {
+        return $this->moveTo($node, 'before');
+    }
+
+    public function makeNextSiblingOf($node)
+    {
+        return $this->moveTo($node, 'after');
     }
 
     public function makeChildOf($node)
@@ -386,6 +407,9 @@ trait MaterializedModel
         switch ($position) {
             case 'root':
                 $this->parent()->dissociate();
+                if ($this->autoOrdering) {
+                    $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
+                }
                 break;
 
             case 'child':
@@ -393,16 +417,77 @@ trait MaterializedModel
                     $target = self::findOrFail($target);
                 }
                 if ($target->isSelfOrDescendantOf($this)) {
-                    throw new MoveNotPossibleException('Cannot make unit child of a child');
+                    throw new MoveNotPossibleException('Cannot make unit descendant of itself');
                 }
                 $this->parent()->associate($target);
+                if ($this->autoOrdering) {
+                    $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
+                }
+                break;
+
+            case 'before':
+                $this->parent()->associate($target->parent);
+                if ($this->autoOrdering) {
+                    $this->setAttribute($this->getOrderColumnName(), $target->getOrder());
+                }
+                break;
+
+            case 'after':
+                $this->parent()->associate($target->parent);
+                if ($this->autoOrdering) {
+                    $this->setAttribute($this->getOrderColumnName(), $target->getOrder() + 1);
+                }
                 break;
         }
 
-        $this->rebuild();
+        $this->save();
+
+        if ($this->autoOrdering) {
+            $this->updateOrdering($previousParent);
+        }
 
         MaterializedModelMovedEvent::dispatch($this, $previousParent);
 
         return $this;
+    }
+
+    public function getMaxOrder()
+    {
+        return (int)$this->newQuery()
+            ->when(
+                $this->parent,
+                fn (Builder $query) => $query->where($this->getParentColumnName(), $this->parent->getKey()),
+                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
+            )
+            ->max($this->getOrderColumnName());
+    }
+
+    protected function updateOrdering(?Model $previousParent)
+    {
+        $this->where($this->getParentColumnName(), $this->getParentId())
+            ->where($this->getOrderColumnName(), '>=', $this->getOrder())
+            ->withoutSelf()
+            ->update([$this->getOrderColumnName() => \DB::raw($this->getOrderColumnName() . '+1')]);
+
+        $this->reorderChildren($this->parent);
+
+        if (optional($previousParent)->getKey() !== optional($this->parent)->getKey()) {
+            $this->reorderChildren($previousParent);
+        }
+
+        $this->refresh();
+    }
+
+    public function reorderChildren(?Model $parent)
+    {
+        $ordering = 0;
+        $this->newMaterializedPathQuery()
+            ->when(
+                $parent,
+                fn (Builder $query) => $query->where($this->getParentColumnName(), $parent->getKey()),
+                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
+            )->each(function (Model $node) use (&$ordering) {
+                $node->update([$node->getOrderColumnName() => ++$ordering]);
+            });
     }
 }
