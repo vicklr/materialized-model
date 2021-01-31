@@ -1,6 +1,8 @@
 <?php
 namespace Vicklr\MaterializedModel\Exceptions;
 
-class MoveNotPossibleException extends \RuntimeException
+use RuntimeException;
+
+class MoveNotPossibleException extends RuntimeException
 {
 }

@@ -16,7 +16,7 @@ class HierarchyCollection extends Collection
         return $this;
     }
 
-    public function toHierarchy()
+    public function toHierarchy(): Collection
     {
         $dict = $this->getDictionary();
 
@@ -89,8 +89,8 @@ class HierarchyCollection extends Collection
                 $prototype->getKeyName(),
                 collect(
                     $this->each->map(function (Model $model) {
-                    return explode('/', $model->getPath());
-                })->flatten()
+                        return explode('/', $model->getPath());
+                    })->flatten()
                 )
                     ->push($this->pluck($prototype->getKey()))
                     ->filter()

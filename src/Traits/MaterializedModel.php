@@ -2,41 +2,36 @@
 
 namespace Vicklr\MaterializedModel\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Vicklr\MaterializedModel\HierarchyCollection;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
 use Vicklr\MaterializedModel\Exceptions\MoveNotPossibleException;
-use Illuminate\Database\Eloquent\Model;
+use Vicklr\MaterializedModel\HierarchyCollection;
 
 trait MaterializedModel
 {
     /**
      * Column name to store the reference to parent's node.
-     *
-     * @var string
      */
-    protected $parentColumn = 'parent_id';
+    protected string $parentColumn = 'parent_id';
 
     /**
      * Column name for path.
-     *
-     * @var string
      */
-    protected $pathColumn = 'path';
+    protected string $pathColumn = 'path';
 
     /**
      * Column name for depth field.
-     *
-     * @var string
      */
-    protected $depthColumn = 'depth';
+    protected string $depthColumn = 'depth';
 
     /**
      * Column name for ordering field.
-     *
-     * @var string
      */
-    protected $orderColumn = 'name';
+    protected string $orderColumn = 'name';
 
     protected static function bootMaterializedModel()
     {
@@ -52,12 +47,12 @@ trait MaterializedModel
         });
     }
 
-    public function getParentColumnName()
+    public function getParentColumnName(): string
     {
         return $this->parentColumn;
     }
 
-    public function getQualifiedParentColumnName()
+    public function getQualifiedParentColumnName(): string
     {
         return $this->getTable() . '.' . $this->getParentColumnName();
     }
@@ -67,12 +62,12 @@ trait MaterializedModel
         return $this->getAttribute($this->getparentColumnName());
     }
 
-    public function getPathColumnName()
+    public function getPathColumnName(): string
     {
         return $this->pathColumn;
     }
 
-    public function getQualifiedPathColumnName()
+    public function getQualifiedPathColumnName(): string
     {
         return $this->getTable() . '.' . $this->getPathColumnName();
     }
@@ -82,12 +77,12 @@ trait MaterializedModel
         return $this->getAttribute($this->getPathColumnName());
     }
 
-    public function getDepthColumnName()
+    public function getDepthColumnName(): string
     {
         return $this->depthColumn;
     }
 
-    public function getQualifiedDepthColumnName()
+    public function getQualifiedDepthColumnName(): string
     {
         return $this->getTable() . '.' . $this->getDepthColumnName();
     }
@@ -97,12 +92,12 @@ trait MaterializedModel
         return $this->getAttribute($this->getDepthColumnName());
     }
 
-    public function getOrderColumnName()
+    public function getOrderColumnName(): string
     {
         return is_null($this->orderColumn) ? $this->getPathColumnName() : $this->orderColumn;
     }
 
-    public function getQualifiedOrderColumnName()
+    public function getQualifiedOrderColumnName(): string
     {
         return $this->getTable() . '.' . $this->getOrderColumnName();
     }
@@ -112,22 +107,25 @@ trait MaterializedModel
         return $this->getAttribute($this->getOrderColumnName());
     }
 
-    public function parent()
+    public function parent(): BelongsTo
     {
-        return $this->belongsTo(get_class($this), $this->getParentColumnName())->withoutGlobalScopes();
+        return $this->belongsTo(get_class($this), $this->getParentColumnName())
+            ->withoutGlobalScopes();
     }
 
-    public function children()
+    public function children(): HasMany
     {
-        return $this->hasMany(get_class($this), $this->getParentColumnName())->withoutGlobalScopes()->orderBy($this->getOrderColumnName());
+        return $this->hasMany(get_class($this), $this->getParentColumnName())
+            ->withoutGlobalScopes()
+            ->orderBy($this->getOrderColumnName());
     }
 
-    public function newMaterializedPathQuery()
+    public function newMaterializedPathQuery(): Builder
     {
         return $this->newQuery()->orderBy($this->getQualifiedOrderColumnName());
     }
 
-    public function newCollection(array $models = [])
+    public function newCollection(array $models = []): HierarchyCollection
     {
         return (new HierarchyCollection($models))->setClassName(__CLASS__);
     }
@@ -186,12 +184,12 @@ trait MaterializedModel
         return $query->whereBetween($this->getDepthColumnName(), [min($scopes), max($scopes)]);
     }
 
-    public function isRoot()
+    public function isRoot(): bool
     {
         return is_null($this->getParentId());
     }
 
-    public function isChild()
+    public function isChild(): bool
     {
         return !$this->isRoot();
     }
@@ -209,7 +207,7 @@ trait MaterializedModel
         return $this;
     }
 
-    public function ancestorsAndSelf()
+    public function ancestorsAndSelf(): Builder
     {
         return $this->newMaterializedPathQuery()
             ->whereIn(
@@ -236,7 +234,7 @@ trait MaterializedModel
         return $this->ancestors()->get($columns);
     }
 
-    public function siblingsAndSelf()
+    public function siblingsAndSelf(): Builder
     {
         return $this->newMaterializedPathQuery()->where($this->getParentColumnName(), $this->getParentId());
     }
@@ -256,7 +254,7 @@ trait MaterializedModel
         return $this->siblings()->get($columns);
     }
 
-    public function descendants($include_self = false)
+    public function descendants($include_self = false): Builder
     {
         return $this->newMaterializedPathQuery()
             ->where(function ($query) use ($include_self) {
@@ -267,7 +265,7 @@ trait MaterializedModel
             });
     }
 
-    public function descendantsAndSelf()
+    public function descendantsAndSelf(): Builder
     {
         return $this->descendants(true);
     }
@@ -300,7 +298,7 @@ trait MaterializedModel
         return $this->descendants()->limitDepth($limit)->get($columns);
     }
 
-    public function getLevel()
+    public function getLevel(): int
     {
         if (is_null($this->getParentId())) {
             return 0;
@@ -309,22 +307,22 @@ trait MaterializedModel
         return $this->ancestors()->count();
     }
 
-    public function isDescendantOf(Model $other)
+    public function isDescendantOf(Model $other): bool
     {
         return $this->getPath() && strpos($this->getPath(), $other->getPath() . $other->getKey() . '/') === 0;
     }
 
-    public function isSelfOrDescendantOf(Model $other)
+    public function isSelfOrDescendantOf(Model $other): bool
     {
         return $other->is($this) || $this->isDescendantOf($other);
     }
 
-    public function isAncestorOf(Model $other)
+    public function isAncestorOf(Model $other): bool
     {
         return $other->isDescendantOf($this);
     }
 
-    public function isSelfOrAncestorOf(Model $other)
+    public function isSelfOrAncestorOf(Model $other): bool
     {
         return $other->is($this) || $this->isAncestorOf($other);
     }
