@@ -19,8 +19,7 @@ class MaterializedModelServiceProvider extends ServiceProvider
         Blueprint::macro('materializedOrdering', function ($order_name = 'ordering', $numerical = true) {
             if ($numerical) {
                 $this->unsignedInteger($order_name)->nullable();
-            }
-            else {
+            } else {
                 $this->string($order_name, 191)->nullable();
             }
         });

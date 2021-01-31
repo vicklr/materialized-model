@@ -87,7 +87,8 @@ class HierarchyCollection extends Collection
         return $prototype->newMaterializedPathQuery()
             ->whereIn(
                 $prototype->getKeyName(),
-                collect($this->each->map(function (Model $model) {
+                collect(
+                    $this->each->map(function (Model $model) {
                     return explode('/', $model->getPath());
                 })->flatten()
                 )
