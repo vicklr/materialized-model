@@ -122,7 +122,8 @@ trait MaterializedModel
 
     public function newMaterializedPathQuery(): Builder
     {
-        return $this->newQuery()->orderBy($this->getQualifiedOrderColumnName());
+        return $this->newQuery()
+            ->orderBy($this->getQualifiedOrderColumnName());
     }
 
     public function newCollection(array $models = []): HierarchyCollection
@@ -134,7 +135,8 @@ trait MaterializedModel
     {
         $instance = new static;
 
-        return $instance->newQuery()->orderBy($instance->getQualifiedOrderColumnName())->get($columns);
+        return $instance->newQuery()
+            ->orderBy($instance->getQualifiedOrderColumnName())->get($columns);
     }
 
     public static function root()
@@ -146,7 +148,8 @@ trait MaterializedModel
     {
         $instance = new static;
 
-        return $instance->newQuery()->whereNull($instance->getParentColumnName())
+        return $instance->newQuery()
+            ->whereNull($instance->getParentColumnName())
             ->orderBy($instance->getQualifiedOrderColumnName());
     }
 
