@@ -36,7 +36,7 @@ trait HasMaterializedPaths
     /**
      * Whether to enforce and automatically manage ordering
      */
-    protected bool $autoOrdering = false;
+    protected bool $autoOrdering = true;
 
     protected static function bootHasMaterializedPaths()
     {

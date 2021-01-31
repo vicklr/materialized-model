@@ -2,11 +2,12 @@
 
 namespace Vicklr\MaterializedModel\Test;
 
-use Vicklr\MaterializedModel\MaterializedModel;
+use Illuminate\Database\Eloquent\Model;
+use Vicklr\MaterializedModel\Traits\HasMaterializedPaths;
 
-class Menu extends MaterializedModel
+class Menu extends Model
 {
-    protected $guarded = [];
+    use HasMaterializedPaths;
 
-    protected bool $autoOrdering = true;
+    protected $guarded = [];
 }

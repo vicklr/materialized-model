@@ -49,47 +49,45 @@ Run `composer install` to install it.
 
 After the package is correctly installed, it can be applied to your models.
 
-Add the Vicklr/Traits/MaterializedModel trait to a class that extends Illuminate\Database\Eloquent\Model
+* Add the Vicklr/MaterializedModel/Traits/HasMaterializedPaths trait to a class that extends Illuminate\Database\Eloquent\Model
+* OR extend the Vicklr/MaterializedModel/MaterializedModel class if you need to modify column names or disable automatic ordering
 
 ### Model configuration
 
 In order to work with Materialized Model, you must ensure that your model class uses
-`Vicklr\Traits\MaterializedModel`.
+`Vicklr\MaterializedModel\Traits\HasMaterializedPaths`.
 
 This is the easiest it can get:
 
 ```php
-use Vicklr\Traits\MaterializedModel;
+use Vicklr\MaterializedModel\Traits\HasMaterializedPaths;
 use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model 
 {
-  use MaterializedModel;
+  use HasMaterializedPaths;
 }
 ```
 
 This is a *slightly* more complex example where we have the column names customized:
 
 ```php
-use Vicklr\Traits\MaterializedModel;
-use Illuminate\Database\Eloquent\Model;
-class Dictionary extends Model 
+use Vicklr\MaterializedModel\MaterializedModel;
+class Dictionary extends MaterializedModel 
 {
-  use MaterializedModel;
-  
   protected $table = 'dictionary';
 
   // 'parent_id' column name
-  protected $parentColumn = 'parent_id';
+  protected string $parentColumn = 'parent_id';
 
   // 'depth' column name
-  protected $depthColumn = 'depth';
+  protected string $depthColumn = 'depth';
   
   // 'path' column name
-  protected $pathColumn = 'path';
+  protected string $pathColumn = 'path';
   
   // 'order' column name
-  protected $orderColumn = 'weight';
+  protected string $orderColumn = 'weight';
 
   // guard attributes from mass-assignment
   protected $guarded = array('id', 'parent_id', 'depth', 'path', 'weight');
