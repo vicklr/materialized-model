@@ -1,6 +1,8 @@
 <?php
 namespace Vicklr\MaterializedModel\Test;
 
+use Vicklr\MaterializedModel\Test\Model\Menu;
+
 class OrderedMaterializedModelTest extends TestCase
 {
     protected Menu $root;
@@ -165,5 +167,17 @@ class OrderedMaterializedModelTest extends TestCase
         $this->assertEquals(1, $secondChild->getOrder());
         $this->assertEquals(1, $thirdChild->getOrder());
         $this->assertEquals(3, $fourthChild->getOrder());
+    }
+
+    /** @test **/
+    public function it_moves_a_node_to_the_root()
+    {
+        $firstChild = $this->root->children()->create(['name' => 'Child folder']);
+
+        $firstChild->makeRoot();
+        $firstChild->refresh();
+
+        $this->assertEquals(2, $firstChild->getOrder());
+        $this->assertNull($firstChild->parent);
     }
 }

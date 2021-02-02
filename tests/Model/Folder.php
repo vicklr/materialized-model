@@ -1,6 +1,6 @@
 <?php
 
-namespace Vicklr\MaterializedModel\Test;
+namespace Vicklr\MaterializedModel\Test\Model;
 
 use Vicklr\MaterializedModel\MaterializedModel;
 

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Event;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
 use Vicklr\MaterializedModel\Exceptions\MoveNotPossibleException;
 use Vicklr\MaterializedModel\HierarchyCollection;
+use Vicklr\MaterializedModel\Test\Model\Folder;
 
 class MaterializedModelTest extends TestCase
 {
@@ -233,5 +234,126 @@ class MaterializedModelTest extends TestCase
         $this->expectException(MoveNotPossibleException::class);
 
         $this->root->makeChildOf($this->root);
+    }
+
+    /** @test **/
+    public function it_can_get_the_root_of_an_unsaved_node()
+    {
+        $subfolder = $this->root->children()->make(['name' => 'Subfolder']);
+        $newRoot = Folder::make(['name' => 'New Root']);
+
+        $this->assertTrue($this->root->is($subfolder->getRoot()));
+        $this->assertEquals($newRoot, $newRoot->getRoot());
+    }
+
+    /** @test **/
+    public function it_can_get_descendants()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $child = $subfolder->children()->create(['name' => 'Child folder']);
+
+        $descendants = $this->root->getDescendants();
+        $this->assertCount(2, $descendants);
+        $this->assertTrue($child->is($descendants->first()));
+        $this->assertTrue($subfolder->is($descendants->last()));
+    }
+
+    /** @test **/
+    public function it_can_get_descendants_and_self()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $child = $subfolder->children()->create(['name' => 'Child folder']);
+
+        $descendants = $this->root->getDescendantsAndSelf();
+        $this->assertCount(3, $descendants);
+        $this->assertContains($child->id, $descendants->pluck('id'));
+        $this->assertContains($subfolder->id, $descendants->pluck('id'));
+        $this->assertContains($this->root->id, $descendants->pluck('id'));
+    }
+
+    /** @test **/
+    public function it_can_limit_the_depth()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $child = $subfolder->children()->create(['name' => 'Child folder']);
+
+        $descendants = $this->root->descendants()->limitDepth(1)->get();
+        $this->assertCount(1, $descendants);
+        $this->assertTrue($subfolder->is($descendants->first()));
+    }
+
+    /** @test **/
+    public function it_can_get_ancestors()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $child = $subfolder->children()->create(['name' => 'Child folder']);
+
+        $ancestors = $child->getAncestors();
+        $this->assertCount(2, $ancestors);
+        $this->assertTrue($this->root->is($ancestors->first()));
+        $this->assertTrue($subfolder->is($ancestors->last()));
+    }
+
+    /** @test **/
+    public function it_can_get_ancestors_and_self()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $ancestors = $subfolder->getAncestorsAndSelf();
+        $this->assertCount(2, $ancestors);
+        $this->assertTrue($this->root->is($ancestors->first()));
+        $this->assertTrue($subfolder->is($ancestors->last()));
+    }
+
+    /** @test **/
+    public function it_can_get_siblings()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $sibling = $this->root->children()->create(['name' => 'Sibling']);
+
+        $siblings = $subfolder->getSiblings();
+        $this->assertCount(1, $siblings);
+        $this->assertTrue($sibling->is($siblings->first()));
+    }
+
+    /** @test **/
+    public function it_can_get_next_sibling()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $sibling = $this->root->children()->create(['name' => 'Subfolder Sibling']);
+
+        $this->assertTrue($sibling->is($subfolder->getNextSibling()));
+    }
+
+    /** @test **/
+    public function it_can_get_previous_sibling()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $sibling = $this->root->children()->create(['name' => 'Previous Sibling']);
+
+        $this->assertTrue($sibling->is($subfolder->getPreviousSibling()));
+    }
+
+    /** @test **/
+    public function it_can_get_siblings_and_self()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+        $sibling = $this->root->children()->create(['name' => 'Sibling']);
+
+        $siblings = $subfolder->getSiblingsAndSelf();
+        $this->assertCount(2, $siblings);
+        $this->assertTrue($sibling->is($siblings->first()));
+        $this->assertTrue($subfolder->is($siblings->last()));
+    }
+
+    /** @test **/
+    public function it_can_test_ancestry()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $this->assertTrue($this->root->isAncestorOf($subfolder));
+        $this->assertTrue($subfolder->isSelfOrAncestorOf($subfolder));
+        $this->assertFalse($subfolder->isAncestorOf($this->root));
+        $this->assertFalse($subfolder->isSelfOrAncestorOf($this->root));
     }
 }

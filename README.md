@@ -2,6 +2,7 @@
 
 [![Latest Stable Version](https://poser.pugx.org/vicklr/materialized-model/v/stable?format=flat-square)](https://packagist.org/packages/vicklr/materialized-model)
 [![MIT Licensed](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
+![GitHub Tests Action Status](https://img.shields.io/github/workflow/status/spatie/laravel-backup/run-tests?label=tests)
 [![Total Downloads](https://img.shields.io/packagist/dt/vicklr/materialized-model.svg?style=flat-square)](https://packagist.org/packages/vicklr/materialized-model)
 
 This Laravel package adds hierarchical functionality to your models.
@@ -69,7 +70,9 @@ class Category extends Model
 }
 ```
 
-This is a *slightly* more complex example where we have the column names customized:
+This is a *slightly* more complex example where we have the column names customized. In order to do so
+we need to inherit from a base class that uses the trait - such a base class is included in the package,
+but you can supply your own, as long as it uses the trait as described above:
 
 ```php
 use Vicklr\MaterializedModel\MaterializedModel;
@@ -153,6 +156,7 @@ to use MaterializedModel with your model. Below are some examples.
 * [Accessing the ancestry/descendancy chain](#node-chains)
 * [Limiting levels of children returned](#limiting-depth)
 * [Custom sorting column](#custom-sorting-column)
+* [Tree hierarchy](#hierarchy-tree)
 * [Model event: `MaterializedModelMovedEvent`](#node-model-events)
 * [Soft deletes](#soft-deletes)
 * [Misc/Utility functions](#misc-utilities)
@@ -371,9 +375,9 @@ protected $orderColumn = 'name';
 <a name="hierarchy-tree"></a>
 ### Dumping the hierarchy tree
 
-Materialized Model extends the default `Eloquent\Collection` class and provides the
-`toHierarchy` method to it which returns a nested collection representing the
-queried tree.
+Materialized Model includes the HierarchyCollection that extends the default 
+`Eloquent\Collection` class and provides the `toHierarchy` method to it which 
+returns a nested collection representing the queried tree.
 
 Retrieving a complete tree hierarchy into a regular `Collection` object with
 its children *properly nested* is as simple as:
@@ -381,6 +385,24 @@ its children *properly nested* is as simple as:
 ```php
 $tree = Category::where('name', '=', 'Books')->first()->getDescendantsAndSelf()->toHierarchy();
 ```
+
+#### Tree operations on a collection
+
+Materialized Model's HierarchyCollection can be instantiated with a collection of nodes
+and operations can be run against them, as long as the class name is set on the HierarchyCollection
+
+```php
+$nodes = ... // Collection of nodes retrieved from the database, by ids or some other means
+$ancestors = (new HierarchyCollection($nodes))->setClassName(Category::class)->getAncestors();
+// $ancestors will now contain all ancestors of all the nodes in the collection
+```
+
+The following operations are available on the HierarchyCollection:
+
+* `getAncestorsAndSelves()`: Retrieve all of their ancestors including the current nodes.
+* `getAncestors()`: Retrieve all of their ancestors.
+* `getDescendantsAndSelves()`: Retrieve all nested children including the current nodes.
+* `getDescendants()`: Retrieve all of their children & nested children.
 
 <a name="node-model-events"></a>
 ### Model events: MaterializedModelMovedEvent

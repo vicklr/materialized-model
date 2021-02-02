@@ -139,7 +139,7 @@ trait HasMaterializedPaths
 
     public function newCollection(array $models = []): HierarchyCollection
     {
-        return (new HierarchyCollection($models))->setClassName(__CLASS__);
+        return (new HierarchyCollection($models))->setClassName(static::class);
     }
 
     public static function all($columns = ['*'])
@@ -181,7 +181,7 @@ trait HasMaterializedPaths
 
     public function scopeWithoutNodes($query, Collection $nodes)
     {
-        return $query->whereNotIn($nodes->first()->getKeyName(), $nodes->pluck($nodes->first()->getKey()));
+        return $query->whereNotIn($nodes->first()->getKeyName(), $nodes->pluck($nodes->first()->getKeyName()));
     }
 
     public function scopeWithoutSelf($query)

@@ -88,11 +88,11 @@ class HierarchyCollection extends Collection
             ->whereIn(
                 $prototype->getKeyName(),
                 collect(
-                    $this->each->map(function (Model $model) {
+                    $this->map(function (Model $model) {
                         return explode('/', $model->getPath());
                     })->flatten()
                 )
-                    ->push($this->pluck($prototype->getKey()))
+                    ->push($this->pluck($prototype->getKeyName()))
                     ->filter()
                     ->unique()
             );
