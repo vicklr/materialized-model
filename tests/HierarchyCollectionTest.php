@@ -32,9 +32,26 @@ class HierarchyCollectionTest extends TestCase
     }
 
     /** @test **/
+    public function it_builds_a_hierarchy_from_a_child()
+    {
+        $hierarchy = Folder::root()->getDescendants()->toHierarchy();
+
+        $this->assertCount(1, $hierarchy);
+        $this->assertCount(1, $hierarchy->first()->children);
+        $this->assertCount(0, $hierarchy->first()->children->first()->children);
+        $this->assertEquals('Child folder', $hierarchy->first()->children->first()->name);
+    }
+
+    /** @test **/
     public function it_can_get_ancestors()
     {
         $hierarchy = Folder::whereId($this->child->id)->get()->getAncestors();
+
+        $this->assertCount(2, $hierarchy);
+        $this->assertContains($this->root->id, $hierarchy->pluck('id'));
+        $this->assertContains($this->subfolder->id, $hierarchy->pluck('id'));
+
+        $hierarchy = Folder::whereId($this->child->id)->get()->ancestors()->get();
 
         $this->assertCount(2, $hierarchy);
         $this->assertContains($this->root->id, $hierarchy->pluck('id'));
@@ -50,6 +67,13 @@ class HierarchyCollectionTest extends TestCase
         $this->assertContains($this->root->id, $hierarchy->pluck('id'));
         $this->assertContains($this->subfolder->id, $hierarchy->pluck('id'));
         $this->assertContains($this->child->id, $hierarchy->pluck('id'));
+
+        $hierarchy = Folder::whereId($this->child->id)->get()->ancestorsAndSelves()->get();
+
+        $this->assertCount(3, $hierarchy);
+        $this->assertContains($this->root->id, $hierarchy->pluck('id'));
+        $this->assertContains($this->subfolder->id, $hierarchy->pluck('id'));
+        $this->assertContains($this->child->id, $hierarchy->pluck('id'));
     }
 
     /** @test **/
@@ -59,12 +83,23 @@ class HierarchyCollectionTest extends TestCase
 
         $this->assertCount(1, $hierarchy);
         $this->assertContains($this->child->id, $hierarchy->pluck('id'));
+
+        $hierarchy = Folder::whereId($this->subfolder->id)->get()->descendants()->get();
+
+        $this->assertCount(1, $hierarchy);
+        $this->assertContains($this->child->id, $hierarchy->pluck('id'));
     }
 
     /** @test **/
     public function it_can_get_descendants_and_selves()
     {
         $hierarchy = Folder::whereId($this->subfolder->id)->get()->getDescendantsAndSelves();
+
+        $this->assertCount(2, $hierarchy);
+        $this->assertContains($this->subfolder->id, $hierarchy->pluck('id'));
+        $this->assertContains($this->child->id, $hierarchy->pluck('id'));
+
+        $hierarchy = Folder::whereId($this->subfolder->id)->get()->descendantsAndSelves()->get();
 
         $this->assertCount(2, $hierarchy);
         $this->assertContains($this->subfolder->id, $hierarchy->pluck('id'));

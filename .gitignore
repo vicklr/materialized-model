@@ -4,4 +4,5 @@ vendor
 tests/temp
 .idea
 .phpunit.result.cache
-.php_cs.cache
+.php_cs.cache!
+/infection.log

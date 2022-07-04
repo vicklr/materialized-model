@@ -18,16 +18,10 @@ class HierarchyCollection extends Collection
 
     public function toHierarchy(): Collection
     {
-        $dict = $this->getDictionary();
-
-        uasort($dict, function ($a, $b) {
-            return $a->getOrder() >= $b->getOrder() ? 1 : -1;
-        });
-
-        return new Collection($this->hierarchical($dict));
+        return new Collection($this->hierarchical($this->getDictionary()));
     }
 
-    protected function hierarchical($result)
+    private function hierarchical($result)
     {
         foreach ($result as $key => $node) {
             $node->setRelation('children', new Collection);

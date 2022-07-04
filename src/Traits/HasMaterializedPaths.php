@@ -47,8 +47,8 @@ trait HasMaterializedPaths
         });
 
         static::saving(function (Model $node) {
-            $node->setPath();
-            $node->setDepth();
+            $node->setPath()
+                ->setDepth();
         });
 
         static::saved(function (Model $node) {
@@ -174,24 +174,24 @@ trait HasMaterializedPaths
         }
     }
 
-    public function scopeWithoutNode($query, $node)
+    protected function scopeWithoutNode($query, $node)
     {
         return $query->where($node->getKeyName(), '!=', $node->getKey());
     }
 
-    public function scopeWithoutNodes($query, Collection $nodes)
+    protected function scopeWithoutNodes($query, Collection $nodes)
     {
         return $query->whereNotIn($nodes->first()->getKeyName(), $nodes->pluck($nodes->first()->getKeyName()));
     }
 
-    public function scopeWithoutSelf($query)
+    protected function scopeWithoutSelf($query)
     {
         return $this->scopeWithoutNode($query, $this);
     }
 
-    public function scopeLimitDepth($query, $limit)
+    protected function scopeLimitDepth($query, $limit)
     {
-        $depth = $this->exists ? $this->getDepth() : $this->getLevel();
+        $depth = $this->getDepth();
         $max = $depth + $limit;
         $scopes = [$depth, $max];
 
@@ -293,7 +293,7 @@ trait HasMaterializedPaths
         $arguments = func_get_args();
 
         $limit = intval(array_shift($arguments));
-        $columns = array_shift($arguments) ?: ['*'];
+        $columns = array_shift($arguments) ?: [];
 
         return $this->descendantsAndSelf()->limitDepth($limit)->get($columns);
     }
@@ -307,12 +307,12 @@ trait HasMaterializedPaths
         $arguments = func_get_args();
 
         $limit = intval(array_shift($arguments));
-        $columns = array_shift($arguments) ?: ['*'];
+        $columns = array_shift($arguments) ?: [];
 
         return $this->descendants()->limitDepth($limit)->get($columns);
     }
 
-    public function getLevel(): int
+    protected function getLevel(): int
     {
         if (is_null($this->getParentId())) {
             return 0;
@@ -377,23 +377,17 @@ trait HasMaterializedPaths
         return $this->moveTo($this, 'root');
     }
 
-    public function setDepth()
+    protected function setDepth()
     {
-        $level = $this->getLevel();
-
-        $this->newMaterializedPathQuery()->where($this->getKeyName(), '=', $this->getKey())
-            ->update([$this->getDepthColumnName() => $level]);
-        $this->setAttribute($this->getDepthColumnName(), $level);
+        $this->setAttribute($this->getDepthColumnName(), $this->getLevel());
 
         return $this;
     }
 
-    public function setPath()
+    protected function setPath()
     {
         $path = ($this->parent ? $this->parent->getPath() : '') . $this->getParentId() . '/';
 
-        $this->newMaterializedPathQuery()->where($this->getKeyName(), '=', $this->getKey())
-            ->update([$this->getPathColumnName() => $path]);
         $this->setAttribute($this->getPathColumnName(), $path);
 
         return $this;
@@ -451,7 +445,7 @@ trait HasMaterializedPaths
         return $this;
     }
 
-    public function getMaxOrder()
+    protected function getMaxOrder()
     {
         return (int)$this->newQuery()
             ->when(
@@ -464,7 +458,11 @@ trait HasMaterializedPaths
 
     protected function updateOrdering(?Model $previousParent)
     {
-        $this->where($this->getParentColumnName(), $this->getParentId())
+        $this->when(
+                $this->parent,
+                fn (Builder $query) => $query->where($this->getParentColumnName(), $this->getParentId()),
+                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
+            )
             ->where($this->getOrderColumnName(), '>=', $this->getOrder())
             ->withoutSelf()
             ->update([$this->getOrderColumnName() => \DB::raw($this->getOrderColumnName() . '+1')]);
@@ -478,7 +476,7 @@ trait HasMaterializedPaths
         $this->refresh();
     }
 
-    public function reorderChildren(?Model $parent)
+    protected function reorderChildren(?Model $parent)
     {
         $ordering = 0;
         $this->newMaterializedPathQuery()

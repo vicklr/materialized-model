@@ -14,11 +14,24 @@ class OrderedMaterializedModelTest extends TestCase
         $this->root = Menu::create(['name' => 'Root folder']);
     }
 
+    /** @test **/
+    public function it_sets_correct_order()
+    {
+        $root = Menu::create(['name' => 'Another Root Folder']);
+        $sub = Menu::create(['name' => 'Subfolder', 'parent_id' => $this->root->getKey()]);
+
+        $this->assertEquals(2, $root->getOrder());
+        $this->assertEquals(1, $sub->getOrder());
+    }
+
     /** @test */
     public function it_can_add_children_to_menu_with_existing_children()
     {
         $firstChild = $this->root->children()->create(['name' => 'Child folder']);
+        Menu::create(['name' => 'Another Root folder']);
         $secondChild = Menu::create(['name' => 'Another Child folder']);
+
+        $this->assertEquals(3, $secondChild->getOrder());
 
         $secondChild->makeChildOf($this->root);
         $firstChild->refresh();

@@ -1,6 +1,7 @@
 <?php
 namespace Vicklr\MaterializedModel\Test;
 
+use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
@@ -17,6 +18,26 @@ class MaterializedModelTest extends TestCase
         parent::setUp();
 
         $this->root = Folder::create(['name' => 'Root folder']);
+    }
+
+    /** @test **/
+    public function it_can_fetch_column_names()
+    {
+        $this->assertEquals('name', $this->root->getOrderColumnName());
+        $this->assertEquals('parent_id', $this->root->getParentColumnName());
+        $this->assertEquals('depth', $this->root->getDepthColumnName());
+        $this->assertEquals('path', $this->root->getPathColumnName());
+    }
+
+    /** @test **/
+    public function it_can_fetch_qualified_column_names()
+    {
+        $this->assertEquals('folders.name', $this->root->getQualifiedOrderColumnName());
+        $this->assertEquals('folders.parent_id', $this->root->getQualifiedParentColumnName());
+        $this->assertEquals('folders.depth', $this->root->getQualifiedDepthColumnName());
+        $this->assertEquals('folders.path', $this->root->getQualifiedPathColumnName());
+        $this->assertEquals('folders.created_at', $this->root->getQualifiedCreatedAtColumn());
+        $this->assertEquals('folders.updated_at', $this->root->getQualifiedUpdatedAtColumn());
     }
 
     /** @test */
@@ -50,11 +71,55 @@ class MaterializedModelTest extends TestCase
     }
 
     /** @test **/
+    public function it_can_fetch_descendants()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $this->assertTrue($child->is($this->root->descendants()->first()));
+        $this->assertCount(1, $this->root->descendants()->get());
+    }
+
+    /** @test **/
+    public function it_can_fetch_descendants_with_reduced_properties()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $descendant = $this->root->getDescendants(1, ['id'])->first();
+
+        $this->assertEquals($child->id, $descendant->id);
+        $this->assertNotEquals($child->name, $descendant->name);
+    }
+
+    /** @test **/
+    public function it_can_fetch_descendants_and_self()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $descendantsAndSelf = $this->root->getDescendantsAndSelf();
+
+        $this->assertTrue($child->is($descendantsAndSelf->first()));
+        $this->assertTrue($this->root->is($descendantsAndSelf->last()));
+        $this->assertCount(2, $descendantsAndSelf);
+    }
+
+    /** @test **/
+    public function it_can_fetch_descendants_and_self_with_reduced_properties()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $descendants = $this->root->getDescendantsAndSelf(1, ['id']);
+
+        $this->assertEquals($child->id, $descendants->first()->id);
+        $this->assertNotEquals($child->name, $descendants->first()->name);
+    }
+
+    /** @test **/
     public function it_sets_path_and_depth_on_save()
     {
         $id = \DB::table('folders')->insertGetId(['name' => 'Child folder', 'parent_id' => $this->root->id, 'path' => '', 'depth' => 0]);
         $child = Folder::findOrFail($id);
         $this->assertEmpty($child->path);
+        $this->assertEquals(0, $child->getDepth());
 
         $child->save();
         $child->refresh();

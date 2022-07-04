@@ -1,0 +1,33 @@
+{
+    "$schema": "https://raw.githubusercontent.com/infection/infection/0.26.13/resources/schema.json",
+    "source": {
+        "directories": [
+            "src"
+        ],
+        "excludes": [
+            "MaterializedModelServiceProvider"
+        ]
+    },
+    "logs": {
+        "text": "infection.log"
+    },
+    "mutators": {
+        "@default": true,
+        "PublicVisibility": {
+            "ignore": [
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths::root",
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths::roots"
+            ]
+        },
+        "ProtectedVisibility": {
+            "ignore": [
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths"
+            ]
+        },
+        "This": {
+            "ignore": [
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths"
+            ]
+        }
+    }
+}
