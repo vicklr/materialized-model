@@ -23,13 +23,13 @@ class HierarchyCollection extends Collection
 
     private function hierarchical($result)
     {
-        foreach ($result as $key => $node) {
+        foreach ($result as $node) {
             $node->setRelation('children', new Collection);
         }
 
         $nestedKeys = [];
 
-        foreach ($result as $key => $node) {
+        foreach ($result as $node) {
             $parentKey = $node->getParentId();
 
             if (!is_null($parentKey) && array_key_exists($parentKey, $result)) {
@@ -97,7 +97,7 @@ class HierarchyCollection extends Collection
         return $this->ancestorsAndSelves()->withoutNodes($this);
     }
 
-    public function getAncestorsAndSelves($columns = ['*'])
+    public function getAncestorsAndSelves($columns = ['*']): Collection
     {
         return $this->ancestorsAndSelves()->get($columns);
     }

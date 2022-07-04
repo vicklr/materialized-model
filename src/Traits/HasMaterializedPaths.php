@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
 use Vicklr\MaterializedModel\Exceptions\MoveNotPossibleException;
 use Vicklr\MaterializedModel\HierarchyCollection;
@@ -38,7 +39,7 @@ trait HasMaterializedPaths
      */
     protected bool $autoOrdering = true;
 
-    protected static function bootHasMaterializedPaths()
+    protected static function bootHasMaterializedPaths(): void
     {
         static::creating(function (Model $node) {
             if ($node->autoOrdering) {
@@ -105,7 +106,7 @@ trait HasMaterializedPaths
 
     public function getOrderColumnName(): string
     {
-        return is_null($this->orderColumn) ? $this->getPathColumnName() : $this->orderColumn;
+        return $this->orderColumn ?: $this->getPathColumnName();
     }
 
     public function getQualifiedOrderColumnName(): string
@@ -164,7 +165,7 @@ trait HasMaterializedPaths
             ->orderBy($instance->getQualifiedOrderColumnName());
     }
 
-    public function rebuild($save_self = false)
+    public function rebuild($save_self = false): void
     {
         if ($save_self) {
             $this->save();
@@ -208,7 +209,7 @@ trait HasMaterializedPaths
         return !$this->isRoot();
     }
 
-    public function getRoot()
+    public function getRoot(): Model
     {
         if ($this->exists) {
             return $this->ancestorsAndSelf()->whereNull($this->getParentColumnName())->first();
@@ -233,17 +234,17 @@ trait HasMaterializedPaths
             );
     }
 
-    public function getAncestorsAndSelf($columns = ['*'])
+    public function getAncestorsAndSelf($columns = ['*']): Collection
     {
         return $this->ancestorsAndSelf()->get($columns);
     }
 
-    public function ancestors()
+    public function ancestors(): Builder
     {
         return $this->ancestorsAndSelf()->withoutSelf();
     }
 
-    public function getAncestors($columns = ['*'])
+    public function getAncestors($columns = ['*']): Collection
     {
         return $this->ancestors()->get($columns);
     }
@@ -253,17 +254,17 @@ trait HasMaterializedPaths
         return $this->newMaterializedPathQuery()->where($this->getParentColumnName(), $this->getParentId());
     }
 
-    public function getSiblingsAndSelf($columns = ['*'])
+    public function getSiblingsAndSelf($columns = ['*']): Collection
     {
         return $this->siblingsAndSelf()->get($columns);
     }
 
-    public function siblings()
+    public function siblings(): Builder
     {
         return $this->siblingsAndSelf()->withoutSelf();
     }
 
-    public function getSiblings($columns = ['*'])
+    public function getSiblings($columns = ['*']): Collection
     {
         return $this->siblings()->get($columns);
     }
@@ -284,7 +285,7 @@ trait HasMaterializedPaths
         return $this->descendants(true);
     }
 
-    public function getDescendantsAndSelf($columns = ['*'])
+    public function getDescendantsAndSelf($columns = ['*']): Collection
     {
         if (is_array($columns)) {
             return $this->descendantsAndSelf()->get($columns);
@@ -298,7 +299,7 @@ trait HasMaterializedPaths
         return $this->descendantsAndSelf()->limitDepth($limit)->get($columns);
     }
 
-    public function getDescendants($columns = ['*'])
+    public function getDescendants($columns = ['*']): Collection
     {
         if (is_array($columns)) {
             return $this->descendants()->get($columns);
@@ -323,7 +324,7 @@ trait HasMaterializedPaths
 
     public function isDescendantOf(Model $other): bool
     {
-        return $this->getPath() && strpos($this->getPath(), $other->getPath() . $other->getKey() . '/') === 0;
+        return $this->getPath() && str_starts_with($this->getPath(), $other->getPath() . $other->getKey() . '/');
     }
 
     public function isSelfOrDescendantOf(Model $other): bool
@@ -341,50 +342,50 @@ trait HasMaterializedPaths
         return $other->is($this) || $this->isAncestorOf($other);
     }
 
-    public function getPreviousSibling()
+    public function getPreviousSibling(): Model
     {
         return $this->siblings()->where($this->getOrderColumnName(), '<', $this->getOrder())
             ->orderBy($this->getOrderColumnName(), 'desc')->first();
     }
 
-    public function getNextSibling()
+    public function getNextSibling(): Model
     {
         return $this->siblings()->where($this->getOrderColumnName(), '>', $this->getOrder())->first();
     }
 
-    public function makeSiblingOf($node)
+    public function makeSiblingOf($node): self
     {
         return $this->makeNextSiblingOf($node);
     }
 
-    public function makePreviousSiblingOf($node)
+    public function makePreviousSiblingOf($node): self
     {
         return $this->moveTo($node, 'before');
     }
 
-    public function makeNextSiblingOf($node)
+    public function makeNextSiblingOf($node): self
     {
         return $this->moveTo($node, 'after');
     }
 
-    public function makeChildOf($node)
+    public function makeChildOf($node): self
     {
         return $this->moveTo($node, 'child');
     }
 
-    public function makeRoot()
+    public function makeRoot(): self
     {
         return $this->moveTo($this, 'root');
     }
 
-    protected function setDepth()
+    protected function setDepth(): self
     {
         $this->setAttribute($this->getDepthColumnName(), $this->getLevel());
 
         return $this;
     }
 
-    protected function setPath()
+    protected function setPath(): self
     {
         $path = ($this->parent ? $this->parent->getPath() : '') . $this->getParentId() . '/';
 
@@ -393,7 +394,7 @@ trait HasMaterializedPaths
         return $this;
     }
 
-    protected function moveTo($target, $position)
+    protected function moveTo($target, $position): self
     {
         //We wish to pass the old parent.
         $previousParent = $this->parent;
@@ -414,9 +415,6 @@ trait HasMaterializedPaths
                     throw new MoveNotPossibleException('Cannot make unit descendant of itself');
                 }
                 $this->parent()->associate($target);
-                if ($this->autoOrdering) {
-                    $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
-                }
                 break;
 
             case 'before':
@@ -445,7 +443,7 @@ trait HasMaterializedPaths
         return $this;
     }
 
-    protected function getMaxOrder()
+    protected function getMaxOrder(): int
     {
         return (int)$this->newQuery()
             ->when(
@@ -456,7 +454,7 @@ trait HasMaterializedPaths
             ->max($this->getOrderColumnName());
     }
 
-    protected function updateOrdering(?Model $previousParent)
+    protected function updateOrdering(?Model $previousParent): void
     {
         $this->when(
                 $this->parent,
@@ -465,7 +463,7 @@ trait HasMaterializedPaths
             )
             ->where($this->getOrderColumnName(), '>=', $this->getOrder())
             ->withoutSelf()
-            ->update([$this->getOrderColumnName() => \DB::raw($this->getOrderColumnName() . '+1')]);
+            ->update([$this->getOrderColumnName() => DB::raw($this->getOrderColumnName() . '+1')]);
 
         $this->reorderChildren($this->parent);
 
@@ -476,7 +474,7 @@ trait HasMaterializedPaths
         $this->refresh();
     }
 
-    protected function reorderChildren(?Model $parent)
+    protected function reorderChildren(?Model $parent): void
     {
         $ordering = 0;
         $this->newMaterializedPathQuery()

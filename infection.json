@@ -24,9 +24,9 @@
                 "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths"
             ]
         },
-        "This": {
+        "IncrementInteger": {
             "ignore": [
-                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths"
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths::moveTo"
             ]
         }
     }
