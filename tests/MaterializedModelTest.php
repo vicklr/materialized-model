@@ -487,7 +487,7 @@ class MaterializedModelTest extends TestCase
     public function it_can_query_siblings_and_self()
     {
         $child = $this->root->children()->create(['name' => 'Child folder']);
-        $sibling = $this->root->children()->create(['name' => 'Sibling']);
+        $this->root->children()->create(['name' => 'Sibling']);
 
         $this->assertTrue($child->is($child->siblingsAndSelf()->first()));
         $this->assertCount(2, $child->siblingsAndSelf()->get());
