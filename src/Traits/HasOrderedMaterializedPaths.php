@@ -23,35 +23,35 @@ trait HasOrderedMaterializedPaths
         });
     }
 
-    protected function performRootMove()
+    protected function performRootMove(): self
     {
         $this->parentRootMove();
 
         return $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
     }
 
-    protected function performChildMove(Model $target)
+    protected function performChildMove(Model $target): self
     {
         $this->parentChildMove($target);
 
         return $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
     }
 
-    protected function performPreviousSiblingMove(Model $target)
+    protected function performPreviousSiblingMove(Model $target): self
     {
         $this->parentPreviousSiblingMove($target);
 
         return $this->setAttribute($this->getOrderColumnName(), $target->getOrder());
     }
 
-    protected function performNextSiblingMove(Model $target)
+    protected function performNextSiblingMove(Model $target): self
     {
         $this->parentNextSiblingMove($target);
 
         return $this->setAttribute($this->getOrderColumnName(), $target->getOrder() + 1);
     }
 
-    protected function finalizeMove(?Model $previousParent = null)
+    protected function finalizeMove(?Model $previousParent = null): void
     {
         $this->parentFinalize($previousParent);
 
