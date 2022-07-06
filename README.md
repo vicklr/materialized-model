@@ -51,12 +51,13 @@ Run `composer install` to install it.
 After the package is correctly installed, it can be applied to your models.
 
 * Add the Vicklr/MaterializedModel/Traits/HasMaterializedPaths trait to a class that extends Illuminate\Database\Eloquent\Model
-* OR extend the Vicklr/MaterializedModel/MaterializedModel class if you need to modify column names or disable automatic ordering
+* OR extend the Vicklr/MaterializedModel/MaterializedModel class if you need to modify column names
+* OR add the Vicklr/MaterializedModel/Traits/HasOrderedMaterializedPaths trait to a class that extends Illuminate\Database\Eloquent\Model that should be automatically ordered by a numerical ordering field
 
 ### Model configuration
 
 In order to work with Materialized Model, you must ensure that your model class uses
-`Vicklr\MaterializedModel\Traits\HasMaterializedPaths`.
+`Vicklr\MaterializedModel\Traits\HasMaterializedPaths` or `Vicklr\MaterializedModel\Traits\HasOrderedMaterializedPaths`.
 
 This is the easiest it can get:
 
@@ -148,7 +149,6 @@ to use MaterializedModel with your model. Below are some examples.
 * [Creating a root node](#creating-root-node)
 * [Inserting nodes](#inserting-nodes)
 * [Deleting nodes](#deleting-nodes)
-* [Getting the nesting level of a node](#node-level)
 * [Moving nodes around](#moving-nodes)
 * [Asking questions to your nodes](#node-questions)
 * [Relations](#node-relations)
@@ -177,14 +177,6 @@ into a *root node*:
 $node->makeRoot();
 ```
 
-You may also nullify it's `parent_id` column to accomplish the same behaviour:
-
-```php
-// This works the same as makeRoot()
-$node->parent_id = null;
-$node->save();
-```
-
 <a name="inserting-nodes"></a>
 ### Inserting nodes
 
@@ -206,16 +198,6 @@ $child1->delete();
 
 Descendants of deleted nodes will also be deleted due to a foreign key constraint in the database. 
 Please note that, for now, `deleting` and `deleted` model events for the descendants will NOT be fired.
-
-<a name="node-level"></a>
-### Getting the nesting level of a node
-
-The `getLevel()` method will return current nesting level, or depth, of a node. 
-It makes a count query to the database, but could otherwise also be read by the depth field
-
-```php
-$node->getLevel(); // 0 when root
-```
 
 <a name="moving-nodes"></a>
 ### Moving nodes around

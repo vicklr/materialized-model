@@ -28,6 +28,9 @@ class OrderedMaterializedModelTest extends TestCase
     public function it_can_add_children_to_menu_with_existing_children()
     {
         $firstChild = $this->root->children()->create(['name' => 'Child folder']);
+        $this->root->children()->create(['name' => 'Child folder 2']);
+        $this->root->children()->create(['name' => 'Child folder 3']);
+        $this->root->children()->create(['name' => 'Child folder 4']);
         Menu::create(['name' => 'Another Root folder']);
         $secondChild = Menu::create(['name' => 'Another Child folder']);
 
@@ -38,7 +41,7 @@ class OrderedMaterializedModelTest extends TestCase
         $secondChild->refresh();
 
         $this->assertEquals(1, $firstChild->getOrder());
-        $this->assertEquals(2, $secondChild->getOrder());
+        $this->assertEquals(5, $secondChild->getOrder());
     }
 
     /** @test */

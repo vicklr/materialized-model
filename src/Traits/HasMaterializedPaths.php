@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
 use Vicklr\MaterializedModel\Exceptions\MoveNotPossibleException;
 use Vicklr\MaterializedModel\HierarchyCollection;
@@ -34,19 +33,8 @@ trait HasMaterializedPaths
      */
     protected string $orderColumn = 'ordering';
 
-    /**
-     * Whether to enforce and automatically manage ordering
-     */
-    protected bool $autoOrdering = true;
-
     protected static function bootHasMaterializedPaths(): void
     {
-        static::creating(function (Model $node) {
-            if ($node->autoOrdering) {
-                $node->setAttribute($node->getOrderColumnName(), $node->getMaxOrder() + 1);
-            }
-        });
-
         static::saving(function (Model $node) {
             $node->setPath()
                 ->setDepth();
@@ -324,7 +312,7 @@ trait HasMaterializedPaths
 
     public function isDescendantOf(Model $other): bool
     {
-        return $this->getPath() && str_starts_with($this->getPath(), $other->getPath() . $other->getKey() . '/');
+        return $this->getPath() && str_starts_with($this->getPath(), $other->getPath() . $other->getKey());
     }
 
     public function isSelfOrDescendantOf(Model $other): bool
@@ -353,29 +341,65 @@ trait HasMaterializedPaths
         return $this->siblings()->where($this->getOrderColumnName(), '>', $this->getOrder())->first();
     }
 
-    public function makeSiblingOf($node): self
+    public function makeSiblingOf(Model $node): self
     {
         return $this->makeNextSiblingOf($node);
     }
 
-    public function makePreviousSiblingOf($node): self
+    public function makePreviousSiblingOf(Model $node): self
     {
-        return $this->moveTo($node, 'before');
+        if ($node->isSelfOrDescendantOf($this)) {
+            throw new MoveNotPossibleException('Cannot make unit descendant of itself');
+        }
+
+        // Save the previous parent to be used when finishing.
+        $previousParent = $this->parent;
+
+        $this->performPreviousSiblingMove($node);
+
+        return $this->finishMove($previousParent);
     }
 
-    public function makeNextSiblingOf($node): self
+    public function makeNextSiblingOf(Model $node): self
     {
-        return $this->moveTo($node, 'after');
+        if ($node->isSelfOrDescendantOf($this)) {
+            throw new MoveNotPossibleException('Cannot make unit descendant of itself');
+        }
+
+        // Save the previous parent to be used when finishing.
+        $previousParent = $this->parent;
+
+        $this->performNextSiblingMove($node);
+
+        return $this->finishMove($previousParent);
     }
 
     public function makeChildOf($node): self
     {
-        return $this->moveTo($node, 'child');
+        if (!$node instanceof Model) {
+            $node = self::findOrFail($node);
+        }
+
+        if ($node->isSelfOrDescendantOf($this)) {
+            throw new MoveNotPossibleException('Cannot make unit descendant of itself');
+        }
+
+        // Save the previous parent to be used when finishing.
+        $previousParent = $this->parent;
+
+        $this->performChildMove($node);
+
+        return $this->finishMove($previousParent);
     }
 
     public function makeRoot(): self
     {
-        return $this->moveTo($this, 'root');
+        // Save the previous parent to be used when finishing.
+        $previousParent = $this->parent;
+
+        $this->performRootMove();
+
+        return $this->finishMove($previousParent);
     }
 
     protected function setDepth(): self
@@ -394,96 +418,47 @@ trait HasMaterializedPaths
         return $this;
     }
 
-    protected function moveTo($target, $position): self
+    protected function finishMove(?Model $previousParent = null): self
     {
-        //We wish to pass the old parent.
-        $previousParent = $this->parent;
-
-        switch ($position) {
-            case 'root':
-                $this->parent()->dissociate();
-                if ($this->autoOrdering) {
-                    $this->setAttribute($this->getOrderColumnName(), $this->getMaxOrder() + 1);
-                }
-                break;
-
-            case 'child':
-                if (!$target instanceof Model) {
-                    $target = self::findOrFail($target);
-                }
-                if ($target->isSelfOrDescendantOf($this)) {
-                    throw new MoveNotPossibleException('Cannot make unit descendant of itself');
-                }
-                $this->parent()->associate($target);
-                break;
-
-            case 'before':
-                $this->parent()->associate($target->parent);
-                if ($this->autoOrdering) {
-                    $this->setAttribute($this->getOrderColumnName(), $target->getOrder());
-                }
-                break;
-
-            case 'after':
-                $this->parent()->associate($target->parent);
-                if ($this->autoOrdering) {
-                    $this->setAttribute($this->getOrderColumnName(), $target->getOrder() + 1);
-                }
-                break;
-        }
-
-        $this->save();
-
-        if ($this->autoOrdering) {
-            $this->updateOrdering($previousParent);
-        }
+        $this->finalizeMove($previousParent);
 
         MaterializedModelMovedEvent::dispatch($this, $previousParent);
 
         return $this;
     }
 
-    protected function getMaxOrder(): int
+    protected function performRootMove(): self
     {
-        return (int)$this->newQuery()
-            ->when(
-                $this->parent,
-                fn (Builder $query) => $query->where($this->getParentColumnName(), $this->parent->getKey()),
-                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
-            )
-            ->max($this->getOrderColumnName());
+        $this->parent()->dissociate();
+
+        return $this;
     }
 
-    protected function updateOrdering(?Model $previousParent): void
+    protected function performChildMove(Model $target): self
     {
-        $this->when(
-                $this->parent,
-                fn (Builder $query) => $query->where($this->getParentColumnName(), $this->getParentId()),
-                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
-            )
-            ->where($this->getOrderColumnName(), '>=', $this->getOrder())
-            ->withoutSelf()
-            ->update([$this->getOrderColumnName() => DB::raw($this->getOrderColumnName() . '+1')]);
+        $this->parent()->associate($target);
 
-        $this->reorderChildren($this->parent);
-
-        if (optional($previousParent)->getKey() !== optional($this->parent)->getKey()) {
-            $this->reorderChildren($previousParent);
-        }
-
-        $this->refresh();
+        return $this;
     }
 
-    protected function reorderChildren(?Model $parent): void
+    protected function performPreviousSiblingMove(Model $target): self
     {
-        $ordering = 0;
-        $this->newMaterializedPathQuery()
-            ->when(
-                $parent,
-                fn (Builder $query) => $query->where($this->getParentColumnName(), $parent->getKey()),
-                fn (Builder $query) => $query->whereNull($this->getParentColumnName())
-            )->each(function (Model $node) use (&$ordering) {
-                $node->update([$node->getOrderColumnName() => ++$ordering]);
-            });
+        $this->parent()->associate($target->parent);
+
+        return $this;
+    }
+
+    protected function performNextSiblingMove(Model $target): self
+    {
+        $this->parent()->associate($target->parent);
+
+        return $this;
+    }
+
+    protected function finalizeMove(?Model $previousParent = null): self
+    {
+        $this->save();
+
+        return $this;
     }
 }

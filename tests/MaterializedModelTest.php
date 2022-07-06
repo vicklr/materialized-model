@@ -1,7 +1,6 @@
 <?php
 namespace Vicklr\MaterializedModel\Test;
 
-use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Event;
 use Vicklr\MaterializedModel\Events\MaterializedModelMovedEvent;
@@ -71,12 +70,21 @@ class MaterializedModelTest extends TestCase
     }
 
     /** @test **/
-    public function it_can_fetch_descendants()
+    public function it_can_query_descendants()
     {
         $child = $this->root->children()->create(['name' => 'Child folder']);
 
         $this->assertTrue($child->is($this->root->descendants()->first()));
         $this->assertCount(1, $this->root->descendants()->get());
+    }
+
+    /** @test **/
+    public function it_can_query_descendants_and_self()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $this->assertTrue($child->is($this->root->descendantsAndSelf()->first()));
+        $this->assertCount(2, $this->root->descendantsAndSelf()->get());
     }
 
     /** @test **/
@@ -261,6 +269,7 @@ class MaterializedModelTest extends TestCase
     {
         Event::fake();
 
+        /** @var Folder $folder */
         $folder = Folder::create(['name' => 'Second Root']);
 
         $folder->makeChildOf($this->root);
@@ -291,6 +300,36 @@ class MaterializedModelTest extends TestCase
         $this->expectException(MoveNotPossibleException::class);
 
         $this->root->makeChildOf($subfolder);
+    }
+
+    /** @test **/
+    public function it_cannot_move_a_node_to_become_sibling_of_its_own_child()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $this->expectException(MoveNotPossibleException::class);
+
+        $this->root->makeSiblingOf($subfolder);
+    }
+
+    /** @test **/
+    public function it_cannot_move_a_node_to_become_next_sibling_of_its_own_child()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $this->expectException(MoveNotPossibleException::class);
+
+        $this->root->makeNextSiblingOf($subfolder);
+    }
+
+    /** @test **/
+    public function it_cannot_move_a_node_to_become_previous_sibling_of_its_own_child()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $this->expectException(MoveNotPossibleException::class);
+
+        $this->root->makePreviousSiblingOf($subfolder);
     }
 
     /** @test **/
@@ -345,6 +384,11 @@ class MaterializedModelTest extends TestCase
         $descendants = $this->root->descendants()->limitDepth(1)->get();
         $this->assertCount(1, $descendants);
         $this->assertTrue($subfolder->is($descendants->first()));
+
+        $descendants = $this->root->descendants()->limitDepth(2)->get();
+        $this->assertCount(2, $descendants);
+        $this->assertTrue($child->is($descendants->first()));
+        $this->assertTrue($subfolder->is($descendants->get(1)));
     }
 
     /** @test **/
@@ -368,6 +412,24 @@ class MaterializedModelTest extends TestCase
         $this->assertCount(2, $ancestors);
         $this->assertTrue($this->root->is($ancestors->first()));
         $this->assertTrue($subfolder->is($ancestors->last()));
+    }
+
+    /** @test **/
+    public function it_can_query_ancestors()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $this->assertTrue($this->root->is($child->ancestors()->first()));
+        $this->assertCount(1, $child->ancestors()->get());
+    }
+
+    /** @test **/
+    public function it_can_query_ancestors_and_self()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+
+        $this->assertTrue($child->is($child->ancestorsAndSelf()->first()));
+        $this->assertCount(2, $child->ancestorsAndSelf()->get());
     }
 
     /** @test **/
@@ -412,6 +474,26 @@ class MaterializedModelTest extends TestCase
     }
 
     /** @test **/
+    public function it_can_query_siblings()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+        $sibling = $this->root->children()->create(['name' => 'Sibling']);
+
+        $this->assertTrue($sibling->is($child->siblings()->first()));
+        $this->assertCount(1, $child->siblings()->get());
+    }
+
+    /** @test **/
+    public function it_can_query_siblings_and_self()
+    {
+        $child = $this->root->children()->create(['name' => 'Child folder']);
+        $sibling = $this->root->children()->create(['name' => 'Sibling']);
+
+        $this->assertTrue($child->is($child->siblingsAndSelf()->first()));
+        $this->assertCount(2, $child->siblingsAndSelf()->get());
+    }
+
+    /** @test **/
     public function it_can_test_ancestry()
     {
         $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
@@ -420,5 +502,16 @@ class MaterializedModelTest extends TestCase
         $this->assertTrue($subfolder->isSelfOrAncestorOf($subfolder));
         $this->assertFalse($subfolder->isAncestorOf($this->root));
         $this->assertFalse($subfolder->isSelfOrAncestorOf($this->root));
+    }
+
+    /** @test **/
+    public function it_can_check_descendants()
+    {
+        $subfolder = $this->root->children()->create(['name' => 'Subfolder']);
+
+        $this->assertFalse($this->root->isDescendantOf($subfolder));
+        $this->assertTrue($subfolder->isSelfOrDescendantOf($subfolder));
+        $this->assertTrue($subfolder->isDescendantOf($this->root));
+        $this->assertTrue($subfolder->isSelfOrDescendantOf($this->root));
     }
 }

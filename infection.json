@@ -21,12 +21,14 @@
         },
         "ProtectedVisibility": {
             "ignore": [
-                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths"
+                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths",
+                "Vicklr\\MaterializedModel\\Traits\\HasOrderedMaterializedPaths"
             ]
         },
         "IncrementInteger": {
             "ignore": [
-                "Vicklr\\MaterializedModel\\Traits\\HasMaterializedPaths::moveTo"
+                "Vicklr\\MaterializedModel\\Traits\\HasOrderedMaterializedPaths::performRootMove",
+                "Vicklr\\MaterializedModel\\Traits\\HasOrderedMaterializedPaths::performChildMove"
             ]
         }
     }
