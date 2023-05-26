@@ -124,8 +124,8 @@ class CreateCategoriesTable extends Migration {
     Schema::create('categories', function(Blueprint $table) {
       $table->id();
 
-      $table->materializedFields($parent_name = 'parent_id', $path_name = 'path', $depth_name = 'depth', $primary_name = 'id');
-      $table->materializedOrdering($order_name = 'weight');
+      $table->materializedFields(parent_name: 'parent_id', path_name: 'path', depth_name: 'depth', primary_name: 'id');
+      $table->materializedOrdering(order_name: 'weight');
     });
   }
 
