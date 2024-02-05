@@ -38,7 +38,7 @@ and big trees that must be queried efficiently (e.g. threaded posts).
 <a name="installation"></a>
 ## Installation
 
-Materialized Model works with Laravel 7 onwards. You can add it to your project by running:
+Materialized Model works with Laravel 8 onwards. You can add it to your project by running:
 ```bash
 composer require vicklr/materialized-model
 ```
