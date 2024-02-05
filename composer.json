@@ -1,5 +1,5 @@
 {
-    "name": "marcoguido/materialized-model",
+    "name": "vicklr/materialized-model",
     "description": "Materialized Path for Eloquent model hierarchies",
     "type": "library",
     "license": "MIT",
