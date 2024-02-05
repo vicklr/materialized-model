@@ -38,12 +38,10 @@ and big trees that must be queried efficiently (e.g. threaded posts).
 <a name="installation"></a>
 ## Installation
 
-Materialized Model works with Laravel 7 onwards. You can add it to your `composer.json` file
-with:
-
-    "vicklr/materialized-model": "~1.0"
-
-Run `composer install` to install it.
+Materialized Model works with Laravel 8 onwards. You can add it to your project by running:
+```bash
+composer require vicklr/materialized-model
+```
 
 <a name="getting-started"></a>
 ## Getting started
@@ -126,8 +124,8 @@ class CreateCategoriesTable extends Migration {
     Schema::create('categories', function(Blueprint $table) {
       $table->id();
 
-      $table->materializedFields($parent_name = 'parent_id', $path_name = 'path', $depth_name = 'depth', $primary_name = 'id');
-      $table->materializedOrdering($order_name = 'weight');
+      $table->materializedFields(parent_name: 'parent_id', path_name: 'path', depth_name: 'depth', primary_name: 'id');
+      $table->materializedOrdering(order_name: 'weight');
     });
   }
 
